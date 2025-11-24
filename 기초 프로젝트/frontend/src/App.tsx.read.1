@@ -1,0 +1,118 @@
+import React, { useEffect, useState } from 'react'
+import './App.css'
+
+import Navigation from './components/Navigation'
+import Footer from './components/Footer'
+import AuthModal from './components/AuthModal'
+import CafeDetailModal from './components/CafeDetailModal'
+
+import MainPage from './pages/MainPage'
+import ResourcesPage from './pages/ResourcesPage'
+import KakaoMapPage from './pages/KakaoMapPage'
+import CommunityPage from './pages/CommunityPage'
+import ProfilePage from './pages/ProfilePage'
+import IntroPage from './pages/IntroPage'
+
+import type { Cafe } from './types/cafe'
+import { sampleCafes } from './data/sampleCafes'
+
+const App: React.FC = () => {
+  const [currentPage, setCurrentPage] = useState<'intro'|'main'|'resources'|'map'|'community'|'profile'>('intro')
+  const [favorites, setFavorites] = useState<number[]>([])
+  const [selectedCafe, setSelectedCafe] = useState<Cafe | null>(null)
+  const [showIntro, setShowIntro] = useState(true)
+  const [typed, setTyped] = useState('')
+  const [showAuth, setShowAuth] = useState(false)
+  const [isSignup, setIsSignup] = useState(false)
+  const [searchCafes, setSearchCafes] = useState<Cafe[]>([])
+  const [searchTitle, setSearchTitle] = useState<string | undefined>(undefined)
+  const [loggedIn, setLoggedIn] = useState<boolean>(false)
+
+  const rainVideo: string = import.meta.env.VITE_RAIN_VIDEO || '/rain.mp4'
+  const studyVideo: string = '/study.mp4'
+
+  useEffect(() => {
+    if (!showIntro) return
+    const message = 'Welcome to SWEET MAP'
+    let i = 0
+    const id = setInterval(() => {
+      setTyped(message.slice(0, ++i))
+      if (i >= message.length) clearInterval(id)
+    }, 150)
+    return () => clearInterval(id)
+  }, [showIntro])
+
+  // Auth backend not yet wired: keep as logged-out
+  useEffect(() => { setLoggedIn(false) }, [])
+
+  const toggleFavorite = (cafeId: number) => {
+    setFavorites(prev => (prev.includes(cafeId) ? prev.filter(id => id !== cafeId) : [...prev, cafeId]))
+  }
+
+  const openDetailsWithMap = (cafe: Cafe) => setSelectedCafe(cafe)
+
+  const handleMapResults = (cafes: Cafe[], title?: string) => {
+    setSearchCafes(cafes)
+    setSearchTitle(title)
+    setCurrentPage('resources')
+  }
+
+  type Page = 'intro'|'main'|'resources'|'map'|'community'|'profile'
+  const go: (p: Page) => void = (p) => setCurrentPage(p)
+
+  const renderCurrentPage = () => {
+    switch (currentPage) {
+      case 'main':
+        return <MainPage rainVideo={rainVideo} onNavigate={go} />
+      case 'resources':
+        return (
+          <ResourcesPage
+            cafes={(searchCafes && searchCafes.length) ? searchCafes : sampleCafes}
+            favorites={favorites}
+            onToggleFavorite={toggleFavorite}
+            onOpenDetails={openDetailsWithMap}
+            title={searchCafes.length ? (searchTitle || undefined) : undefined}
+          />
+        )
+      case 'map':
+        return <KakaoMapPage onResults={handleMapResults} />
+      case 'community':
+        return <CommunityPage cafes={(searchCafes && searchCafes.length) ? searchCafes : sampleCafes} />
+      case 'profile':
+        return (
+          <ProfilePage
+            favorites={favorites}
+            cafes={(searchCafes && searchCafes.length) ? searchCafes : sampleCafes}
+            loggedIn={loggedIn}
+            onOpenAuth={() => { setIsSignup(false); setShowAuth(true) }}
+          />
+        )
+      default:
+        return <MainPage rainVideo={rainVideo} onNavigate={go} />
+    }
+  }
+
+  if (showIntro) {
+    return (
+      <IntroPage studyVideo={studyVideo} text={typed} onClose={() => { setShowIntro(false); setCurrentPage('main') }} />
+    )
+  }
+
+  return (
+    <div className="App">
+      <Navigation
+        onNavigate={go}
+        onOpenAuth={() => { setIsSignup(false); setShowAuth(true) }}
+        loggedIn={loggedIn}
+        onLogout={() => { setLoggedIn(false) }}
+      />
+      {renderCurrentPage()}
+      <Footer />
+      {selectedCafe && <CafeDetailModal cafe={selectedCafe} onClose={() => setSelectedCafe(null)} />}
+      {showAuth && <AuthModal isSignup={isSignup} onClose={() => setShowAuth(false)} onToggleMode={() => setIsSignup(v => !v)} />}
+    </div>
+  )
+}
+
+export default App
+

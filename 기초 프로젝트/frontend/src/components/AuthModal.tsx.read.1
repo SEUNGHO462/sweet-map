@@ -1,0 +1,36 @@
+import React from 'react'
+import { X } from 'lucide-react'
+
+interface Props {
+  isSignup: boolean
+  onClose: () => void
+  onToggleMode: () => void
+}
+
+const AuthModal: React.FC<Props> = ({ isSignup, onClose, onToggleMode }) => (
+  <div className="modal-overlay" onClick={onClose}>
+    <div className="auth-modal" onClick={e => e.stopPropagation()}>
+      <button className="close-btn" onClick={onClose}><X size={20}/></button>
+      <div className="auth-header">
+        <h2 className="auth-title">{isSignup ? 'Sign up' : 'Sign in'}</h2>
+      </div>
+      <div className="auth-fields">
+        {isSignup && (<input className="auth-input" placeholder="?âÎÑ§?? />)}
+        <input className="auth-input" type="email" placeholder="?¥Î©î?? />
+        <input className="auth-input" type="password" placeholder="ÎπÑÎ?Î≤àÌò∏" />
+        {isSignup && (<input className="auth-input" type="password" placeholder="ÎπÑÎ?Î≤àÌò∏ ?ïÏù∏" />)}
+        <button className="auth-submit" onClick={()=>alert('Î∞±Ïóî??MySQL) ?∞Í≤∞ ???¥Î©î??ÎπÑÎ?Î≤àÌò∏ ?∏Ï¶ù?ºÎ°ú ?ÑÌôò?©Îãà??')}>{isSignup ? '?åÏõê Í∞Ä?? : 'Î°úÍ∑∏??}</button>
+        <div className="auth-toggle-line">
+          {isSignup ? (
+            <span>?¥Î? Í≥ÑÏ†ï???àÎÇò?? <button className="linklike" onClick={onToggleMode}>Î°úÍ∑∏??/button></span>
+          ) : (
+            <span>Í≥ÑÏ†ï???ÜÎÇò?? <button className="linklike" onClick={onToggleMode}>?åÏõê Í∞Ä??/button></span>
+          )}
+        </div>
+      </div>
+    </div>
+  </div>
+)
+
+export default AuthModal
+

@@ -1,0 +1,117 @@
+import React, { useEffect, useMemo, useState } from 'react'
+import type { Cafe } from '../types/cafe'
+import '../styles/ResourcesPage.css'
+
+type Plan = {
+  id: string
+  title: string
+  cafeId?: number
+  date?: string
+  time?: string
+  items: { id: string; text: string; done: boolean }[]
+}
+
+interface Props {
+  favorites: number[]
+  cafes: Cafe[]
+}
+
+const LS_KEY = 'sm_plans_v1'
+
+const ProfilePage: React.FC<Props> = ({ favorites, cafes }) => {
+  const [tab, setTab] = useState<'favorites'|'planner'>('favorites')
+  const favCafes = useMemo(() => cafes.filter(c => favorites.includes(c.id)), [favorites, cafes])
+
+  const [plans, setPlans] = useState<Plan[]>([])
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(LS_KEY)
+      if (raw) setPlans(JSON.parse(raw))
+    } catch {}
+  }, [])
+  useEffect(() => {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(plans)) } catch {}
+  }, [plans])
+
+  const addPlan = () => {
+    const id = Math.random().toString(36).slice(2)
+    setPlans(p => [{ id, title: '??방문 계획', items: [] }, ...p])
+  }
+  const toggleItem = (pid: string, iid: string) => {
+    setPlans(p => p.map(pl => pl.id !== pid ? pl : { ...pl, items: pl.items.map(it => it.id === iid ? { ...it, done: !it.done } : it) }))
+  }
+  const addItem = (pid: string, text: string) => {
+    const iid = Math.random().toString(36).slice(2)
+    setPlans(p => p.map(pl => pl.id !== pid ? pl : { ...pl, items: [...pl.items, { id: iid, text, done: false }] }))
+  }
+  const removePlan = (pid: string) => setPlans(p => p.filter(pl => pl.id !== pid))
+
+  return (
+    <div className="resources-page">
+      <div className="res-header" style={{ alignItems: 'center' }}>
+        <h1>My Page</h1>
+        <div className="res-filters">
+          <button className={`chip ${tab==='favorites'?'active':''}`} onClick={() => setTab('favorites')}>즐겨찾기</button>
+          <button className={`chip ${tab==='planner'?'active':''}`} onClick={() => setTab('planner')}>방문 ?�래??/button>
+        </div>
+      </div>
+
+      {tab === 'favorites' ? (
+        <div className="cafe-grid dark">
+          {favCafes.length ? favCafes.map(c => (
+            <div key={c.id} className="cafe-card dark">
+              <div className="card-image"><img src={c.image} alt={c.name} referrerPolicy="no-referrer" loading="lazy" /></div>
+              <div className="card-content">
+                <h3 className="card-name" style={{ color: '#a0ffe6', textShadow: '0 1px 6px rgba(0,0,0,.35)' }}>{c.name}</h3>
+                <div className="location line">{c.address || c.location}</div>
+              </div>
+            </div>
+          )) : (
+            <div style={{ color:'#e9e9ec', padding:'1rem 2rem' }}>즐겨찾기??카페가 ?�습?�다.</div>
+          )}
+        </div>
+      ) : (
+        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 2rem 2rem', color:'#e9e9ec' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:12 }}>
+            <div style={{ fontWeight:800 }}>방문 ?�랜</div>
+            <button className="btn-ghost" onClick={addPlan}>???�랜</button>
+          </div>
+          <div style={{ display:'grid', gap:12 }}>
+            {plans.map(pl => (
+              <div key={pl.id} className="cafe-card dark" style={{ padding:12 }}>
+                <div style={{ display:'grid', gap:8 }}>
+                  <input className="auth-input" style={{ background:'#141517', color:'#e9e9ec' }}
+                    value={pl.title} onChange={e => setPlans(p => p.map(x => x.id===pl.id?{...x, title:(e.target as HTMLInputElement).value}:x))} />
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+                    <input className="auth-input" type="date" value={pl.date||''} onChange={e=>setPlans(p=>p.map(x=>x.id===pl.id?{...x,date:(e.target as HTMLInputElement).value}:x))} />
+                    <input className="auth-input" type="time" value={pl.time||''} onChange={e=>setPlans(p=>p.map(x=>x.id===pl.id?{...x,time:(e.target as HTMLInputElement).value}:x))} />
+                  </div>
+                  <div>
+                    <div style={{ marginBottom:6, opacity:.9 }}>체크리스??/div>
+                    <div style={{ display:'grid', gap:6 }}>
+                      {pl.items.map(it => (
+                        <label key={it.id} style={{ display:'flex', alignItems:'center', gap:8 }}>
+                          <input type="checkbox" checked={it.done} onChange={()=>toggleItem(pl.id,it.id)} />
+                          <span style={{ opacity: it.done? .6: 1 }}>{it.text}</span>
+                        </label>
+                      ))}
+                      <div style={{ display:'flex', gap:6 }}>
+                        <input className="auth-input" placeholder="????추�?" onKeyDown={e=>{
+                          if (e.key==='Enter') { const v=(e.target as HTMLInputElement).value.trim(); if(v){ addItem(pl.id,v); (e.target as HTMLInputElement).value=''; } }
+                        }} />
+                        <button className="btn-ghost" onClick={()=>removePlan(pl.id)}>??��</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default ProfilePage
+

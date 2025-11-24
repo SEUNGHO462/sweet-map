@@ -1,0 +1,42 @@
+import React, { useState } from 'react'
+import '../styles/CommunityPage.css'
+
+type Post = { id: string; author: string; text: string; photo?: string; createdAt: string }
+
+const seed: Post[] = [
+  { id: 'p1', author: 'Guest', text: '?�주 ?�시가지 카페 추천 받습?�다 ??, createdAt: new Date().toISOString() },
+]
+
+const CommunityPage: React.FC = () => {
+  const [list, setList] = useState<Post[]>(seed)
+  const [text, setText] = useState('')
+  const add = () => {
+    const v = text.trim(); if (!v) return
+    setList([{ id: Math.random().toString(36).slice(2), author: 'Me', text: v, createdAt: new Date().toISOString() }, ...list])
+    setText('')
+  }
+  return (
+    <div className="community-page">
+      <div className="page-header">
+        <h1>Community</h1>
+        <p>간단??글???�겨보세??/p>
+      </div>
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 2rem 2rem' }}>
+        <div style={{ display:'flex', gap:8, marginBottom:12 }}>
+          <input className="auth-input" placeholder="무슨 ?�각???�고 ?�나??" value={text} onChange={e=>setText((e.target as HTMLInputElement).value)} onKeyDown={e=>{ if(e.key==='Enter') add() }} />
+          <button className="btn-ghost" onClick={add}>?�성</button>
+        </div>
+        <div style={{ display:'grid', gap:10 }}>
+          {list.map(p => (
+            <div key={p.id} className="cafe-card dark" style={{ padding:12 }}>
+              <div style={{ color:'#e9e9ec', fontWeight:700 }}>{p.author} <span style={{ opacity:.8, fontWeight:400, marginLeft:6, fontSize:12 }}>{new Date(p.createdAt).toLocaleString()}</span></div>
+              <div style={{ color:'#e9e9ec', marginTop:6 }}>{p.text}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default CommunityPage

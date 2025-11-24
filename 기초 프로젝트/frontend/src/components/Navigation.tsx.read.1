@@ -1,0 +1,56 @@
+import React from 'react'
+import { Coffee, Lock, Menu, X } from 'lucide-react'
+
+type Page = 'intro'|'main'|'resources'|'map'|'community'|'profile'
+
+interface Props {
+  onNavigate: (p: Page) => void
+  onOpenAuth: () => void
+  loggedIn?: boolean
+  onLogout?: () => void
+}
+
+const Navigation: React.FC<Props> = ({ onNavigate, onOpenAuth, loggedIn, onLogout }) => {
+  const [open, setOpen] = React.useState(false)
+  return (
+    <nav className="navbar">
+      <div className="nav-container">
+        <div className="nav-brand" onClick={() => onNavigate('main')}>
+          <Coffee className="brand-icon" />
+          <span>SWEET MAP</span>
+        </div>
+        <div className="desktop-nav">
+          <button onClick={() => onNavigate('resources')}>Cafe</button>
+          <button onClick={() => onNavigate('map')}>Map</button>
+          <button onClick={() => onNavigate('community')}>Community</button>
+          <button onClick={() => onNavigate('profile')}>My</button>
+          {loggedIn ? (
+            <button onClick={onLogout} title="Logout"><Lock size={20} /></button>
+          ) : (
+            <button onClick={onOpenAuth} title="Login"><Lock size={20} /></button>
+          )}
+        </div>
+        <button className="mobile-menu-btn" onClick={() => setOpen(!open)}>
+          {open ? <X size={24} /> : <Menu size={24} />}
+        </button>
+      </div>
+      {open && (
+        <div className="mobile-menu show">
+          <button onClick={() => { onNavigate('resources'); setOpen(false) }}>Cafe</button>
+          <button onClick={() => { onNavigate('community'); setOpen(false) }}>Community</button>
+          <button onClick={() => { onNavigate('map'); setOpen(false) }}>Map</button>
+          <button onClick={() => { onNavigate('profile'); setOpen(false) }}>My</button>
+          <div className="mobile-auth">
+            {loggedIn ? (
+              <button onClick={() => { onLogout?.(); setOpen(false) }}>Sign out</button>
+            ) : (
+              <button onClick={() => { onOpenAuth(); setOpen(false) }}>Sign in</button>
+            )}
+          </div>
+        </div>
+      )}
+    </nav>
+  )
+}
+
+export default Navigation

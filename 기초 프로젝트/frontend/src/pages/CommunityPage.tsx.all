@@ -1,0 +1,150 @@
+import React, { useEffect, useMemo, useState } from 'react'
+import '../styles/CommunityPage.css'
+import type { Cafe } from '../types/cafe'
+import { sampleCafes } from '../data/sampleCafes'
+
+type Review = {
+  id: string
+  cafeId: number
+  rating: number // 1~5
+  text: string
+  photo?: string
+  author: string
+  createdAt: string
+}
+
+const LS_KEY = 'sm_reviews_v1'
+
+interface Props {
+  cafes?: Cafe[]
+}
+
+const CommunityPage: React.FC<Props> = ({ cafes: cafesProp }) => {
+  const cafes: Cafe[] = (cafesProp && cafesProp.length ? cafesProp : sampleCafes)
+
+  const [reviews, setReviews] = useState<Review[]>([])
+  const [cafeId, setCafeId] = useState<number>(cafes[0]?.id ?? 0)
+  const [rating, setRating] = useState<number>(5)
+  const [text, setText] = useState('')
+  const [photo, setPhoto] = useState('')
+  const [sortBy, setSortBy] = useState<'new'|'rating'>('new')
+  const [minRating, setMinRating] = useState<number>(0)
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(LS_KEY)
+      if (raw) setReviews(JSON.parse(raw))
+    } catch {/* noop */}
+  }, [])
+  useEffect(() => {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(reviews)) } catch {/* noop */}
+  }, [reviews])
+
+  const addReview = () => {
+    const body = text.trim()
+    if (!cafeId || !body) return
+    const rev: Review = {
+      id: Math.random().toString(36).slice(2),
+      cafeId,
+      rating,
+      text: body,
+      photo: photo.trim() || undefined,
+      author: 'Guest',
+      createdAt: new Date().toISOString(),
+    }
+    setReviews(r => [rev, ...r])
+    setText('')
+    setPhoto('')
+    setRating(5)
+  }
+
+  const filtered = useMemo(() => {
+    const arr = reviews.filter(r => r.rating >= minRating)
+    return [...arr].sort((a,b) => sortBy === 'new' ? (new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) : (b.rating - a.rating))
+  }, [reviews, sortBy, minRating])
+
+  const cafeById = (id: number) => cafes.find(c => c.id === id)
+
+  // when cafes list changes (e.g., after a new map search), keep selection valid
+  useEffect(() => {
+    if (!cafes.length) return
+    if (!cafes.some(c => c.id === cafeId)) {
+      setCafeId(cafes[0].id)
+    }
+  }, [cafes])
+
+  return (
+    <div className="community-page">
+      <div className="page-header">
+        <h1>Community ¬∑ Reviews</h1>
+        <p>Ïπ¥Ìéò Î∞©Î¨∏ ?ÑÍ∏∞Î•?Í≥µÏú†?òÍ≥†, ?§Î•∏ ?¨Îûå?§Ïùò Î¶¨Î∑∞Î•??ïÏù∏??Î≥¥ÏÑ∏??</p>
+      </div>
+
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 2rem 2rem' }}>
+        <div className="cafe-card dark" style={{ padding:12, marginBottom:16 }}>
+          <div style={{ display:'grid', gap:8 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr 1fr', gap:8 }}>
+              <select className="auth-input" value={cafeId} onChange={e=>setCafeId(Number((e.target as HTMLSelectElement).value))}>
+                {cafes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+              <select className="auth-input" value={rating} onChange={e=>setRating(Number((e.target as HTMLSelectElement).value))}>
+                {[5,4,3,2,1].map(n => <option key={n} value={n}>{`??.repeat(n)} ({n})</option>)}
+              </select>
+              <input className="auth-input" placeholder="?¨ÏßÑ URL (?†ÌÉù)" value={photo} onChange={e=>setPhoto((e.target as HTMLInputElement).value)} />
+            </div>
+            <textarea className="auth-input" rows={3} placeholder="Ïπ¥Ìéò???Ä???îÏßÅ???ÑÍ∏∞Î•??ëÏÑ±??Ï£ºÏÑ∏??" value={text} onChange={e=>setText((e.target as HTMLTextAreaElement).value)} />
+            <div style={{ display:'flex', justifyContent:'center' }}>
+              <button className="btn-ghost" onClick={addReview}>Î¶¨Î∑∞ ?ëÏÑ±</button>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display:'flex', gap:8, alignItems:'center', marginBottom:12 }}>
+          <label style={{ color:'#e9e9ec', opacity:.9 }}>?ïÎ†¨</label>
+          <select className="auth-input" value={sortBy} onChange={e=>setSortBy((e.target as HTMLSelectElement).value as any)} style={{ maxWidth:160 }}>
+            <option value="new">ÏµúÏã†??/option>
+            <option value="rating">?âÏ†ê ?íÏ???/option>
+          </select>
+          <label style={{ color:'#e9e9ec', opacity:.9, marginLeft:12 }}>ÏµúÏÜå ?âÏ†ê</label>
+          <select className="auth-input" value={minRating} onChange={e=>setMinRating(Number((e.target as HTMLSelectElement).value))} style={{ maxWidth:140 }}>
+            <option value={0}>?ÑÏ≤¥</option>
+            {[5,4,3,2,1].map(n => <option key={n} value={n}>{n}???¥ÏÉÅ</option>)}
+          </select>
+        </div>
+
+        <div style={{ display:'grid', gap:12 }}>
+          {filtered.map(r => {
+            const cafe = cafeById(r.cafeId)
+            return (
+              <div key={r.id} className="cafe-card dark" style={{ padding:12 }}>
+                <div style={{ display:'grid', gridTemplateColumns:'64px 1fr', gap:12, alignItems:'center' }}>
+                  <div className="card-image" style={{ width:64, height:64, borderRadius:8, overflow:'hidden' }}>
+                    <img src={cafe?.image} alt={cafe?.name} referrerPolicy="no-referrer" loading="lazy" />
+                  </div>
+                  <div style={{ textAlign:'center' }}>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+                      <div style={{ fontWeight:800, color:'#e9e9ec' }}>{cafe?.name || 'Unknown Cafe'}</div>
+                      <div style={{ color:'#ffd76a' }}>{'??.repeat(r.rating)}</div>
+                      <div style={{ opacity:.7, color:'#e9e9ec' }}>{new Date(r.createdAt).toLocaleString()}</div>
+                    </div>
+                    <div style={{ marginTop:6, color:'#e9e9ec', textAlign:'center' }}>{r.text}</div>
+                    {r.photo && (
+                      <div style={{ marginTop:8 }}>
+                        <img src={r.photo} alt="review" style={{ maxWidth:'100%', borderRadius:8 }} loading="lazy" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+          {!filtered.length && (
+            <div className="cafe-card dark" style={{ padding:12, color:'#e9e9ec' }}>?ÑÏßÅ Î¶¨Î∑∞Í∞Ä ?ÜÏäµ?àÎã§. Ï≤?Î¶¨Î∑∞Î•??®Í≤®Î≥¥ÏÑ∏??</div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default CommunityPage

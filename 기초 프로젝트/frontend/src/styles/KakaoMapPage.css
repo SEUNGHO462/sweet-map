@@ -1,0 +1,9 @@
+/* Map page layout and search bar */
+.map-page { max-width: 1100px; margin: 0 auto; padding: 16px; }
+.map-search { display: flex; gap: 8px; margin: 8px 0 12px; }
+.map-search input { flex: 1; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background:#141517; color:#e9e9ec; }
+.map-search button { padding: 10px 12px; border-radius: 8px; background: var(--accent-pink); color:#fff; border: none; }
+
+/* Resizable Kakao map container */
+.kakao-map-resize { width:100%; max-width:1100px; height:60vh; border-radius:12px; overflow:hidden; box-shadow:0 12px 36px rgba(0,0,0,.18); }
+.kakao-map-resize > div { width:100% !important; height:100% !important; }

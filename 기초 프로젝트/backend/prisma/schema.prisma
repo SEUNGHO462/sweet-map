@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String     @id @default(uuid()) @db.Char(36)
+  email         String     @unique
+  passwordHash  String     @map("password_hash")
+  name          String?
+  createdAt     DateTime   @default(now()) @map("created_at")
+  reviews       Review[]
+  favorites     Favorite[]
+  plans         Plan[]
+}
+
+model Review {
+  id         String   @id @default(uuid()) @db.Char(36)
+  userId     String   @db.Char(36)
+  cafeId     BigInt   @map("cafe_id")
+  rating     Int
+  text       String
+  photoUrl   String?  @map("photo_url")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@index([cafeId], name: "idx_reviews_cafe")
+  @@index([createdAt], name: "idx_reviews_created")
+}
+
+model Favorite {
+  userId     String   @db.Char(36)
+  cafeId     BigInt
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@id([userId, cafeId])
+  @@index([userId], name: "idx_fav_user")
+}
+
+model Plan {
+  id         String     @id @default(uuid()) @db.Char(36)
+  userId     String     @db.Char(36)
+  title      String
+  cafeId     BigInt?    @map("cafe_id")
+  date       DateTime?  @db.Date
+  timeText   String?    @map("time_text") @db.VarChar(32)
+  createdAt  DateTime   @default(now()) @map("created_at")
+
+  user       User       @relation(fields: [userId], references: [id])
+  items      PlanItem[]
+
+  @@index([userId], name: "idx_plans_user")
+}
+
+model PlanItem {
+  id         String   @id @default(uuid()) @db.Char(36)
+  planId     String   @db.Char(36)
+  text       String
+  done       Boolean  @default(false)
+  orderIndex Int      @default(0) @map("order_index")
+  createdAt  DateTime @default(now())
+
+  plan       Plan     @relation(fields: [planId], references: [id])
+
+  @@index([planId], name: "idx_items_plan")
+}
+
+
