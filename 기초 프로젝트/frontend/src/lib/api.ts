@@ -47,4 +47,12 @@ export const api = {
     })
     return handle<T>(res)
   },
+  async delete<T = any>(path: string, init?: RequestInit): Promise<T> {
+    const res = await fetch(path, {
+      method: 'DELETE',
+      credentials: 'include',
+      ...init,
+    })
+    return handle<T>(res)
+  },
 }

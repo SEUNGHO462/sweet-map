@@ -38,3 +38,16 @@ export function authenticate(req: Request & { userId?: string }, res: Response, 
   }
 }
 
+export function maybeAuthenticate(req: Request & { userId?: string }, _res: Response, next: NextFunction) {
+  try {
+    const token = (req.cookies && req.cookies[COOKIE_NAME]) || undefined
+    if (!token) return next()
+    const secret = process.env.JWT_SECRET
+    if (!secret) throw new Error('JWT_SECRET is not set')
+    const payload = jwt.verify(token, secret) as { sub: string }
+    req.userId = payload.sub
+  } catch {
+    // ignore invalid token
+  }
+  next()
+}

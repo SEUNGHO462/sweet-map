@@ -1,11 +1,11 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import { prisma } from '../prisma'
-import { authenticate } from '../middleware/auth'
+import { authenticate, maybeAuthenticate } from '../middleware/auth'
 
 const router = Router()
 
-router.get('/', async (req, res) => {
+router.get('/', maybeAuthenticate, async (req: any, res) => {
   const idsParam = (req.query.cafeIds as string | undefined) || (req.query.cafeId as string | undefined)
   const whereClause: any = {}
   if (idsParam) {
@@ -20,6 +20,7 @@ router.get('/', async (req, res) => {
     orderBy: { createdAt: 'desc' },
     take: 100,
   })
+  const viewerId = req.userId
   return res.json(rows.map(r => ({
     id: r.id,
     cafeId: Number(r.cafeId),
@@ -28,6 +29,8 @@ router.get('/', async (req, res) => {
     photoUrl: r.photoUrl,
     createdAt: r.createdAt,
     authorName: r.user?.name || 'Guest',
+    authorId: r.userId,
+    canDelete: Boolean(viewerId && viewerId === r.userId),
   })))
 })
 
@@ -61,10 +64,22 @@ router.post('/', authenticate, async (req: any, res) => {
       photoUrl: result.photoUrl,
       createdAt: result.createdAt,
       authorName: result.user?.name || 'Guest',
+      authorId: result.userId,
+      canDelete: true,
     })
   } catch (e: any) {
     return res.status(400).json({ error: e?.message || 'bad_request' })
   }
+})
+
+router.delete('/:id', authenticate, async (req: any, res) => {
+  const { id } = req.params
+  if (!id) return res.status(400).json({ error: 'missing_id' })
+  const review = await prisma.review.findUnique({ where: { id } })
+  if (!review) return res.status(404).json({ error: 'not_found' })
+  if (review.userId !== req.userId) return res.status(403).json({ error: 'forbidden' })
+  await prisma.review.delete({ where: { id } })
+  return res.json({ ok: true })
 })
 
 export default router

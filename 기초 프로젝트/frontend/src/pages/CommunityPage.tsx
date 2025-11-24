@@ -14,6 +14,8 @@ type Review = {
   author: string
   createdAt: string
   likes?: number
+  authorId?: string
+  canDelete?: boolean
 }
 
 type CommentEntry = { author: string; text: string; timestamp: string }
@@ -52,6 +54,7 @@ const CommunityPage: React.FC<Props> = ({ cafes: cafesProp, loggedIn = false, us
   const [comments, setComments] = useState<Record<string, CommentEntry[]>>({})
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({})
   const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({})
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null)
 
   const mapReviewFromApi = (data: any): Review => ({
     id: data.id,
@@ -61,6 +64,8 @@ const CommunityPage: React.FC<Props> = ({ cafes: cafesProp, loggedIn = false, us
     author: data.authorName || 'Guest',
     createdAt: data.createdAt,
     likes: data.likes ?? 0,
+    authorId: data.authorId,
+    canDelete: Boolean(data.canDelete),
   })
 
   const fetchReviews = useCallback(async () => {
@@ -141,6 +146,27 @@ const CommunityPage: React.FC<Props> = ({ cafes: cafesProp, loggedIn = false, us
       showStatus('리뷰가 저장됐어요 ☕️')
     } catch (err: any) {
       showStatus(err?.message || '리뷰 저장 실패')
+    }
+  }
+
+  const deleteReview = async (reviewId: string) => {
+    if (requireLogin()) return
+    if (!window.confirm('이 리뷰를 삭제할까요?')) return
+    setPendingDelete(reviewId)
+    try {
+      await api.delete(`/api/reviews/${reviewId}`)
+      setReviews(prev => prev.filter(r => r.id !== reviewId))
+      setComments(prev => {
+        const next = { ...prev }
+        delete next[reviewId]
+        return next
+      })
+      showStatus('리뷰가 삭제되었어요.')
+    } catch (err: any) {
+      console.error(err)
+      showStatus(err?.message || '리뷰 삭제에 실패했어요.')
+    } finally {
+      setPendingDelete(current => (current === reviewId ? null : current))
     }
   }
 
@@ -306,9 +332,20 @@ const CommunityPage: React.FC<Props> = ({ cafes: cafesProp, loggedIn = false, us
                       <span className="author">@{r.author}</span>
                       <span className="date">{new Date(r.createdAt).toLocaleString()}</span>
                     </div>
-                    <div className="rating-pill">
-                      <span>{'★'.repeat(r.rating)}</span>
-                      <small>{r.rating}.0</small>
+                    <div className="card-actions">
+                      <div className="rating-pill">
+                        <span>{'★'.repeat(r.rating)}</span>
+                        <small>{r.rating}.0</small>
+                      </div>
+                      {r.canDelete && (
+                        <button
+                          className="delete-btn"
+                          onClick={() => deleteReview(r.id)}
+                          disabled={pendingDelete === r.id}
+                        >
+                          {pendingDelete === r.id ? '삭제중...' : '삭제'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
